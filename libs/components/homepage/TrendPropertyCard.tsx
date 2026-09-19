@@ -57,7 +57,7 @@ const TrendPropertyCard = (props: TrendPropertyCardProps) => {
 							{property.propertyBarter ? 'Barter' : ''}
 						</p>
 						<div className="view-like-box">
-							<IconButton color={'default'}>
+							<IconButton color={'default'} onClick={() => likePropertyHandler(user, property?._id)} >
 								<RemoveRedEyeIcon />
 							</IconButton>
 							<Typography className="view-cnt">{property?.propertyViews}</Typography>
