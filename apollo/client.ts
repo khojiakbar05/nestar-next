@@ -9,8 +9,8 @@ import { TokenRefreshLink } from 'apollo-link-token-refresh';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 
 function getHeaders() {
-	const headers = {} as HeadersInit;
-	const token = getJwtToken();
+	const headers = {} as HeadersInit; // bu yerda qaysi member request qilyapkanini bilib oladi 
+	const token = getJwtToken(); // memberni tokenini oladi
 	// @ts-ignore
 	if (token) headers['Authorization'] = `Bearer ${token}`;
 	return headers;

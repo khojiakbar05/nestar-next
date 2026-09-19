@@ -5,27 +5,32 @@ import { Button, Stack, Typography } from '@mui/material';
 import axios from 'axios';
 import { REACT_APP_API_URL } from '../../config';
 import { getJwtToken } from '../../auth';
-import { useReactiveVar } from '@apollo/client';
+import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
 import { MemberUpdate } from '../../types/member/member.update';
+import { UPDATE_MEMBER } from '../../../apollo/user/mutation';
+import { sweetErrorHandling, sweetMixinSuccessAlert } from '../../sweetAlert';
+import { updateUserInfo } from '../../auth';
 
 const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 	const device = useDeviceDetect();
 	const token = getJwtToken();
 	const user = useReactiveVar(userVar);
 	const [updateData, setUpdateData] = useState<MemberUpdate>(initialValues);
+	const [updateMember] = useMutation(UPDATE_MEMBER);
 
 	/** APOLLO REQUESTS **/
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		setUpdateData({
-			...updateData,
+		setUpdateData((currentData) => ({
+			...currentData,
+			_id: user._id,
 			memberNick: user.memberNick,
 			memberPhone: user.memberPhone,
 			memberAddress: user.memberAddress,
 			memberImage: user.memberImage,
-		});
+		}));
 	}, [user]);
 
 	/** HANDLERS **/
@@ -65,8 +70,7 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 
 			const responseImage = response.data.data.imageUploader;
 			console.log('+responseImage: ', responseImage);
-			updateData.memberImage = responseImage;
-			setUpdateData({ ...updateData });
+			setUpdateData((currentData) => ({ ...currentData, memberImage: responseImage }));
 
 			return `${REACT_APP_API_URL}/${responseImage}`;
 		} catch (err) {
@@ -74,7 +78,21 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 		}
 	};
 
-	const updatePropertyHandler = useCallback(async () => {}, [updateData]);
+	const updatePropertyHandler = useCallback(async () => {
+		try {
+			const result = await updateMember({
+				variables: { input: updateData },
+			});
+			const updatedMember = result.data?.updateMember;
+
+			if (updatedMember?.accessToken) updateUserInfo(updatedMember.accessToken);
+			else if (updatedMember) userVar({ ...user, ...updatedMember });
+
+			await sweetMixinSuccessAlert('Profile updated successfully!');
+		} catch (err: any) {
+			await sweetErrorHandling(err);
+		}
+	}, [updateData, updateMember, user]);
 
 	const doDisabledCheck = () => {
 		if (
