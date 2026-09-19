@@ -8,6 +8,9 @@ import { Autoplay, Navigation, Pagination } from 'swiper';
 import TopPropertyCard from './TopPropertyCard';
 import { PropertiesInquiry } from '../../types/property/property.input';
 import { Property } from '../../types/property/property';
+import { useQuery } from '@apollo/client';
+import { GET_PROPERTIES } from '../../../apollo/user/query';
+import { T } from '../../types/common';
 
 interface TopPropertiesProps {
 	initialInput: PropertiesInquiry;
@@ -19,6 +22,22 @@ const TopProperties = (props: TopPropertiesProps) => {
 	const [topProperties, setTopProperties] = useState<Property[]>([]);
 
 	/** APOLLO REQUESTS **/
+
+	const {
+			loading: getProperties,
+			data: getPropertiesData,
+			error: getPropertiesError,
+			refetch: getPropertiesRefetch,
+		} = useQuery(GET_PROPERTIES, {
+			fetchPolicy: 'cache-and-network', // bu 1-datani cachedan oladi agar cache bln network har xil bolsa cacheni network bln update qilib oladi agar cache yoq bolsa networkdan oladi
+			variables: { input: initialInput }, // postmandagi inputlar
+			notifyOnNetworkStatusChange: true,
+			onCompleted(data: T) {
+				setTopProperties(data?.getProperties?.list);
+			},
+		});
+
+
 	/** HANDLERS **/
 
 	if (device === 'mobile') {
