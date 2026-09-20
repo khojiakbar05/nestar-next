@@ -30,8 +30,9 @@ import { T } from '../../libs/types/common';
 import { Direction, Message } from '../../libs/enums/common.enum';
 import 'swiper/css';
 import 'swiper/css/pagination';
-import { LIKE_TARGET_PROPERTY } from '../../apollo/user/mutation';
+import { CREATE_COMMENT, LIKE_TARGET_PROPERTY } from '../../apollo/user/mutation';
 import { sweetErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
+import { GET_COMMENTS } from '../../apollo/admin/query';
 
 SwiperCore.use([Autoplay, Navigation, Pagination]);
 
@@ -61,6 +62,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	/** APOLLO REQUESTS **/
 
 	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY);
+	const [createComment] = useMutation(CREATE_COMMENT);
 
 	const {
 		loading: getProperty,
@@ -92,7 +94,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 				sort: 'createdAt',
 				direction: Direction.DESC,
 				search: {
-					locationList: [property?.propertyLocation],
+					locationList: property?.propertyLocation ? [property?.propertyLocation] : [],
 				},
 			},
 		},
@@ -100,6 +102,24 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 		notifyOnNetworkStatusChange: true,
 		onCompleted(data: T) {
 			if (data?.getProperties?.list) setDestinationProperties(data?.getProperties?.list);
+		},
+	});
+
+	const {
+		loading: getCommentsLoading,
+		data: getCommentsData,
+		error: getCommentsError,
+		refetch: getCommentsRefetch,
+	} = useQuery(GET_COMMENTS, {
+		fetchPolicy: 'cache-and-network', // bu 1-datani cachedan oladi agar cache bln network har xil bolsa cacheni network bln update qilib oladi agar cache yoq bolsa networkdan oladi
+		variables: {
+			input: commentInquiry,
+		},
+		skip: !commentInquiry.search.commentRefId, // "" = bosh stringga teng bolsa bu mantiq ishga tushmaydi
+		notifyOnNetworkStatusChange: true,
+		onCompleted(data: T) {
+			if (data?.getComments?.list) setPropertyComments(data?.getComments?.list);
+			setCommentTotal(data?.getComments?.metaCounter[0]?.total ?? 0);
 		},
 	});
 
@@ -120,7 +140,9 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 		}
 	}, [router]);
 
-	useEffect(() => {}, [commentInquiry]);
+	useEffect(() => {
+		if (commentInquiry.search.commentRefId) getCommentsRefetch({ input: commentInquiry });
+	}, [commentInquiry]);
 
 	/** HANDLERS **/
 	const changeImageHandler = (image: string) => {
@@ -142,7 +164,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 				direction: Direction.DESC,
 				search: {
 					locationList: [property?.propertyLocation],
-					},
+				},
 			});
 			await getPropertyRefetch();
 
@@ -156,6 +178,17 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	const commentPaginationChangeHandler = async (event: ChangeEvent<unknown>, value: number) => {
 		commentInquiry.page = value;
 		setCommentInquiry({ ...commentInquiry });
+	};
+
+	const createCommentHandler = async () => {
+		try {
+			await createComment({ variables: { input: insertCommentData } });
+			setInsertCommentData((currentData) => ({ ...currentData, commentContent: '' }));
+			await getCommentsRefetch({ input: commentInquiry });
+			await sweetTopSmallSuccessAlert('Review submitted', 800);
+		} catch (err: any) {
+			await sweetErrorAlert(err.message);
+		}
 	};
 
 	if (device === 'mobile') {
@@ -470,6 +503,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 										<Button
 											className={'submit-review'}
 											disabled={insertCommentData.commentContent === '' || user?._id === ''}
+												onClick={createCommentHandler}
 										>
 											<Typography className={'title'}>Submit Review</Typography>
 											<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
@@ -591,7 +625,11 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 										{destinationProperties.map((property: Property) => {
 											return (
 												<SwiperSlide className={'similar-homes-slide'} key={property.propertyTitle}>
-													<PropertyBigCard property={property} key={property?._id} likePropertyHandler={likePropertyHandler} />
+													<PropertyBigCard
+														property={property}
+														key={property?._id}
+														likePropertyHandler={likePropertyHandler}
+													/>
 												</SwiperSlide>
 											);
 										})}
