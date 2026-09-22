@@ -20,8 +20,8 @@ export const logIn = async (nick: string, password: string): Promise<void> => {
 		const { jwtToken } = await requestJwtToken({ nick, password });
 
 		if (jwtToken) {
-			updateStorage({ jwtToken });
-			updateUserInfo(jwtToken);
+			updateStorage({ jwtToken });  // localStorage.accessToken > Backend
+			updateUserInfo(jwtToken); // ReactiveVariable > Frontend
 		}
 	} catch (err) {
 		console.warn('login err', err);

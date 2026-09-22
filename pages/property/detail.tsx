@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect, useState } from 'react';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
 import withLayoutFull from '../../libs/components/layout/LayoutFull';
 import { NextPage } from 'next';
@@ -65,12 +65,12 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	const [createComment] = useMutation(CREATE_COMMENT);
 
 	const {
-		loading: getProperty,
+		loading: getPropertyLoading,
 		data: getPropertyData,
 		error: getPropertyError,
 		refetch: getPropertyRefetch,
 	} = useQuery(GET_PROPERTY, {
-		fetchPolicy: 'cache-and-network', // bu 1-datani cachedan oladi agar cache bln network har xil bolsa cacheni network bln update qilib oladi agar cache yoq bolsa networkdan oladi
+		fetchPolicy: 'network-only', // bu 1-datani cachedan oladi agar cache bln network har xil bolsa cacheni network bln update qilib oladi agar cache yoq bolsa networkdan oladi
 		variables: { input: propertyId },
 		skip: !propertyId, // property yoq bolsa bu mantiq amalga oshmaydi kutib turadi
 		notifyOnNetworkStatusChange: true,
@@ -81,7 +81,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	});
 
 	const {
-		loading: getProperties,
+		loading: getPropertiesLoading,
 		data: getPropertiesData,
 		error: getPropertiesError,
 		refetch: getPropertiesRefetch,
@@ -182,14 +182,21 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 
 	const createCommentHandler = async () => {
 		try {
+			if (!user._id) throw new Error(Message.NOT_AUTHENTICATED);
 			await createComment({ variables: { input: insertCommentData } });
-			setInsertCommentData((currentData) => ({ ...currentData, commentContent: '' }));
-			await getCommentsRefetch({ input: commentInquiry });
+			setInsertCommentData((currentData) => ({ ...currentData, commentContent: '' })); // page update bolganda yana qayta inputni bosh " " ga tenglaydi
+			await getCommentsRefetch({ input: commentInquiry }); // refetch qayta pageni update qiladi
 			await sweetTopSmallSuccessAlert('Review submitted', 800);
 		} catch (err: any) {
 			await sweetErrorAlert(err.message);
 		}
 	};
+
+	if(getPropertyLoading) {
+		return (<Stack sx={{display: "flex", justifyContext: "center", alignItems: "center", width: "100%", heigh: "1000px"}}>
+			<CircularProgress size={'4rem'} />
+		</Stack>);
+	}
 
 	if (device === 'mobile') {
 		return <div>PROPERTY DETAIL PAGE</div>;
