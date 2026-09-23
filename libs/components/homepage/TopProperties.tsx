@@ -29,38 +29,37 @@ const TopProperties = (props: TopPropertiesProps) => {
 	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY);
 
 	const {
-			loading: getProperties,
-			data: getPropertiesData,
-			error: getPropertiesError,
-			refetch: getPropertiesRefetch,
-		} = useQuery(GET_PROPERTIES, {
-			fetchPolicy: 'cache-and-network', // bu 1-datani cachedan oladi agar cache bln network har xil bolsa cacheni network bln update qilib oladi agar cache yoq bolsa networkdan oladi
-			variables: { input: initialInput }, // postmandagi inputlar
-			notifyOnNetworkStatusChange: true,
-			onCompleted(data: T) {
-				setTopProperties(data?.getProperties?.list);
-			},
-		});
-
+		loading: getPropertiesLoading,
+		data: getPropertiesData,
+		error: getPropertiesError,
+		refetch: getPropertiesRefetch,
+	} = useQuery(GET_PROPERTIES, {
+		fetchPolicy: 'cache-and-network', // bu 1-datani cachedan oladi agar cache bln network har xil bolsa cacheni network bln update qilib oladi agar cache yoq bolsa networkdan oladi
+		variables: { input: initialInput }, // postmandagi inputlar
+		notifyOnNetworkStatusChange: true,
+		onCompleted(data: T) {
+			setTopProperties(data?.getProperties?.list);
+		},
+	});
 
 	/** HANDLERS **/
 
-		const likePropertyHandler = async (user: T, id: string) => {
-			try {
-				if (!id) return;
-				if (!user._id) throw new Error(Message.NOT_AUTHENTICATED);
-				// execute likeTergetProperrtiesRefetch Mutation
-				await likeTargetProperty({ variables: { input: id } });
-	
-				// execute getPropertiesRefetch
-				await getPropertiesRefetch({ input: initialInput });
-	
-				await sweetTopSmallSuccessAlert('success', 800);
-			} catch (err: any) {
-				console.log('Error, likePropertyHandler: ', err.message);
-				sweetErrorAlert(err.message).then();
-			}
-		};
+	const likePropertyHandler = async (user: T, id: string) => {
+		try {
+			if (!id) return;
+			if (!user._id) throw new Error(Message.NOT_AUTHENTICATED);
+			// execute likeTergetProperrtiesRefetch Mutation
+			await likeTargetProperty({ variables: { input: id } });
+
+			// execute getPropertiesRefetch
+			await getPropertiesRefetch({ input: initialInput });
+
+			await sweetTopSmallSuccessAlert('success', 800);
+		} catch (err: any) {
+			console.log('Error, likePropertyHandler: ', err.message);
+			sweetErrorAlert(err.message).then();
+		}
+	};
 
 	if (device === 'mobile') {
 		return (
@@ -80,7 +79,7 @@ const TopProperties = (props: TopPropertiesProps) => {
 							{topProperties.map((property: Property) => {
 								return (
 									<SwiperSlide className={'top-property-slide'} key={property?._id}>
-										<TopPropertyCard property={property} likePropertyHandler={likePropertyHandler}  />
+										<TopPropertyCard property={property} likePropertyHandler={likePropertyHandler} />
 									</SwiperSlide>
 								);
 							})}

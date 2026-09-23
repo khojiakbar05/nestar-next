@@ -6,8 +6,9 @@ import PropertyBigCard from '../../libs/components/common/PropertyBigCard';
 import ReviewCard from '../../libs/components/agent/ReviewCard';
 import { Box, Button, Pagination, Stack, Typography } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
-import { useReactiveVar } from '@apollo/client';
+import { useMutation, useReactiveVar } from '@apollo/client';
 import { useRouter } from 'next/router';
+import { LIKE_TARGET_PROPERTY } from '../../apollo/user/mutation';
 import { Property } from '../../libs/types/property/property';
 import { Member } from '../../libs/types/member/member';
 import { sweetErrorHandling } from '../../libs/sweetAlert';
@@ -44,6 +45,8 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 	});
 
 	/** APOLLO REQUESTS **/
+	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY);
+
 	/** LIFECYCLES **/
 	useEffect(() => {
 		if (router.query.agentId) setMbId(router.query.agentId as string);
@@ -58,6 +61,16 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 			if (memberId === user?._id) await router.push(`/mypage?memberId=${memberId}`);
 			else await router.push(`/member?memberId=${memberId}`);
 		} catch (error) {
+			await sweetErrorHandling(error);
+		}
+	};
+
+	const likePropertyHandler = async (user: any, id: string) => {
+		try {
+			if (!id) return;
+			if (!user?._id) return;
+			await likeTargetProperty({ variables: { input: id } });
+		} catch (error: any) {
 			await sweetErrorHandling(error);
 		}
 	};
@@ -103,7 +116,7 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 							{agentProperties.map((property: Property) => {
 								return (
 									<div className={'wrap-main'} key={property?._id}>
-										<PropertyBigCard property={property} key={property?._id} />
+													<PropertyBigCard property={property} key={property?._id} likePropertyHandler={likePropertyHandler} />
 									</div>
 								);
 							})}

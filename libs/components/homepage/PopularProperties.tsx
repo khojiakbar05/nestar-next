@@ -25,7 +25,7 @@ const PopularProperties = (props: PopularPropertiesProps) => {
 	/** APOLLO REQUESTS **/
 
 	const {
-		loading: getProperties,
+		loading: getPropertiesLoading,
 		data: getPropertiesData,
 		error: getPropertiesError,
 		refetch: getPropertiesRefetch,
