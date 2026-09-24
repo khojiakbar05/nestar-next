@@ -206,7 +206,7 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 									<div className={'wrap-main'} key={property?._id}>
 										<PropertyBigCard
 											property={property}
-											key={property?._id}
+							 				key={property?._id}
 											likePropertyHandler={likePropertyHandler}
 										/>
 									</div>
