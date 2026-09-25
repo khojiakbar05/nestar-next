@@ -9,13 +9,13 @@ import AgentCard from '../../libs/components/common/AgentCard';
 import { useRouter } from 'next/router';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { Member } from '../../libs/types/member/member';
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { GET_AGENTS } from '../../apollo/user/query';
 import { T } from '../../libs/types/common';
 import { LIKE_TARGET_MEMBER } from '../../apollo/user/mutation';
-import { Message } from '@mui/icons-material';
 import { Messages } from '../../libs/config';
 import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
+import { userVar } from '../../apollo/store';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
@@ -47,6 +47,7 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 	const [total, setTotal] = useState<number>(0);
 	const [currentPage, setCurrentPage] = useState<number>(1);
 	const [searchText, setSearchText] = useState<string>('');
+	const user = useReactiveVar(userVar);
 
 	/** APOLLO REQUESTS **/
 	const [likeTargetMember] = useMutation(LIKE_TARGET_MEMBER);
@@ -146,19 +147,18 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 
 	const likeMemberHandler = async (user: any, id: string) => {
 		try {
-			if (!id) return; // check which user is entering
-			if (!user._id) throw new Error(Messages.error2); // checking the user is logged in or not
+			if (!id) return;
+			if (!user?._id) throw new Error(Messages.error2);
+
 			await likeTargetMember({
 				variables: {
 					input: id,
 				},
 			});
-
 			await getAgentsRefetch({ input: searchFilter });
 			await sweetTopSmallSuccessAlert('success', 800);
-		} catch (err: any) {
-			console.log('Error, likePropertyHandler: ', err.message);
-			sweetMixinErrorAlert(err.message).then();
+		} catch (error: any) {
+			await sweetMixinErrorAlert(error.message);
 		}
 	};
 
@@ -224,6 +224,7 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 							</div>
 						) : (
 							agents.map((agent: Member) => {
+
 								return <AgentCard agent={agent} key={agent._id} likeMemberHandler={likeMemberHandler} />;
 							})
 						)}

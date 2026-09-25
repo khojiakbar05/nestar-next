@@ -7,6 +7,9 @@ import { REACT_APP_API_URL } from '../../config';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { T } from '../../types/common';
+import { useMutation } from '@apollo/client';
+import { CREATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
 import '@toast-ui/editor/dist/toastui-editor.css';
 
 const TuiEditor = () => {
@@ -14,6 +17,7 @@ const TuiEditor = () => {
 		token = getJwtToken(),
 		router = useRouter();
 	const [articleCategory, setArticleCategory] = useState<BoardArticleCategory>(BoardArticleCategory.FREE);
+	const [createBoardArticle] = useMutation(CREATE_BOARD_ARTICLE);
 
 	/** APOLLO REQUESTS **/
 
@@ -76,7 +80,31 @@ const TuiEditor = () => {
 		memoizedValues.articleTitle = e.target.value;
 	};
 
-	const handleRegisterButton = async () => {};
+	const handleRegisterButton = async () => {
+		try {
+			const articleContent = editorRef.current?.getInstance().getMarkdown() ?? '';
+			if (!memoizedValues.articleTitle.trim() || !articleContent.trim()) {
+				throw new Error('Please enter an article title and content.');
+			}
+
+			await createBoardArticle({
+				variables: {
+					input: {
+						articleCategory,
+						articleTitle: memoizedValues.articleTitle.trim(),
+						articleContent,
+						articleImage: memoizedValues.articleImage || null,
+					},
+				},
+			});
+
+			await sweetTopSmallSuccessAlert('Article created successfully', 800);
+			await router.push({ pathname: '/community', query: { articleCategory } });
+		} catch (err: any) {
+			console.log('Error, createBoardArticle:', err.message);
+			sweetMixinErrorAlert(err.message).then();
+		}
+	};
 
 	const doDisabledCheck = () => {
 		if (memoizedValues.articleContent === '' || memoizedValues.articleTitle === '') {

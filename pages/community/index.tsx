@@ -89,11 +89,21 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 			if (!id) return; // check which user is entering
 			if (!user._id) throw new Error(Messages.error2); // checking the user is logged in or not
 
-			await likeTargetBoardArticle({
+			const { data } = await likeTargetBoardArticle({
 				variables: {
 					input: id,
 				},
 			});
+			const updatedArticle = data?.likeTargetBoardArticle;
+			if (updatedArticle) {
+				setBoardArticles((articles) =>
+					articles.map((article) =>
+						article._id === updatedArticle._id
+							? { ...article, articleLikes: updatedArticle.articleLikes }
+							: article,
+					),
+				);
+			}
 
 			await boardArticlesRefetch({ input: searchCommunity });
 			await sweetTopSmallSuccessAlert('success', 800);
