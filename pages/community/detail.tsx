@@ -235,7 +235,7 @@ const CommunityDetail: NextPage = ({ initialInput, ...props }: T) => {
 				});
 				await sweetMixinSuccessAlert('Successfully Updated!!');
 			}
-			// await getCommentsRefetch({ input: searchFilter });
+			await getCommentsRefetch({ input: searchFilter });
 		} catch (error: any) {
 			await sweetMixinErrorAlert(error.message);
 		} finally {
