@@ -3,8 +3,8 @@ import { NextPage } from 'next';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import { Button, Stack, Typography } from '@mui/material';
 import axios from 'axios';
-import { REACT_APP_API_URL } from '../../config';
-import { getJwtToken } from '../../auth';
+import { Messages, REACT_APP_API_URL } from '../../config';
+import { getJwtToken, updateStorage } from '../../auth';
 import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
 import { MemberUpdate } from '../../types/member/member.update';
@@ -17,9 +17,9 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 	const token = getJwtToken();
 	const user = useReactiveVar(userVar);
 	const [updateData, setUpdateData] = useState<MemberUpdate>(initialValues);
-	const [updateMember] = useMutation(UPDATE_MEMBER);
 
 	/** APOLLO REQUESTS **/
+	const [updateMember] = useMutation(UPDATE_MEMBER);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
@@ -80,19 +80,23 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 
 	const updatePropertyHandler = useCallback(async () => {
 		try {
+			if (!user._id) throw new Error(Messages.error2);
+			updateData._id = user._id;
 			const result = await updateMember({
-				variables: { input: updateData },
+				variables: {
+					input: updateData,
+				},
 			});
-			const updatedMember = result.data?.updateMember;
 
-			if (updatedMember?.accessToken) updateUserInfo(updatedMember.accessToken);
-			else if (updatedMember) userVar({ ...user, ...updatedMember });
-
-			await sweetMixinSuccessAlert('Profile updated successfully!');
+			//@ts-ignore
+			const jwtToken = result.data.updateMember?.accessToken;
+			await updateStorage({ jwtToken });
+			updateUserInfo(result.data.updateMember?.accessToken);
+			await sweetMixinSuccessAlert('information updated successfully.');
 		} catch (err: any) {
 			await sweetErrorHandling(err);
 		}
-	}, [updateData, updateMember, user]);
+	}, [updateData]);
 
 	const doDisabledCheck = () => {
 		if (
@@ -104,6 +108,33 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 			return true;
 		}
 	};
+
+	// const updatePropertyHandler = useCallback(async () => {
+	// 	try {
+	// 		const result = await updateMember({
+	// 			variables: { input: updateData },
+	// 		});
+	// 		const updatedMember = result.data?.updateMember;
+
+	// 		if (updatedMember?.accessToken) updateUserInfo(updatedMember.accessToken);
+	// 		else if (updatedMember) userVar({ ...user, ...updatedMember });
+
+	// 		await sweetMixinSuccessAlert('Profile updated successfully!');
+	// 	} catch (err: any) {
+	// 		await sweetErrorHandling(err);
+	// 	}
+	// }, [updateData, updateMember, user]);
+
+	// const doDisabledCheck = () => {
+	// 	if (
+	// 		updateData.memberNick === '' ||
+	// 		updateData.memberPhone === '' ||
+	// 		updateData.memberAddress === '' ||
+	// 		updateData.memberImage === ''
+	// 	) {
+	// 		return true;
+	// 	}
+	// };
 
 	console.log('+updateData', updateData);
 
