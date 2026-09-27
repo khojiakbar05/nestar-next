@@ -9,8 +9,9 @@ import axios from 'axios';
 import { T } from '../../types/common';
 import { useMutation } from '@apollo/client';
 import { CREATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
-import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
+import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
 import '@toast-ui/editor/dist/toastui-editor.css';
+import { Message } from '../../enums/common.enum';
 
 const TuiEditor = () => {
 	const editorRef = useRef<Editor>(null),
@@ -20,6 +21,7 @@ const TuiEditor = () => {
 	const [createBoardArticle] = useMutation(CREATE_BOARD_ARTICLE);
 
 	/** APOLLO REQUESTS **/
+	const createboardArticle = useMutation(CREATE_BOARD_ARTICLE);
 
 	const memoizedValues = useMemo(() => {
 		const articleTitle = '',
@@ -82,29 +84,58 @@ const TuiEditor = () => {
 
 	const handleRegisterButton = async () => {
 		try {
-			const articleContent = editorRef.current?.getInstance().getMarkdown() ?? '';
-			if (!memoizedValues.articleTitle.trim() || !articleContent.trim()) {
-				throw new Error('Please enter an article title and content.');
+			const editor = editorRef.current;
+			const articleContent = editor?.getInstance().getHTML() as string;
+			memoizedValues.articleContent = articleContent;
+
+			if (memoizedValues.articleContent === '' && memoizedValues.articleContent === '' ) {
+				throw new Error(Message.INSERT_ALL_INPUTS);
 			}
 
 			await createBoardArticle({
 				variables: {
-					input: {
-						articleCategory,
-						articleTitle: memoizedValues.articleTitle.trim(),
-						articleContent,
-						articleImage: memoizedValues.articleImage || null,
-					},
+					input: {...memoizedValues, articleCategory},
 				},
 			});
 
-			await sweetTopSmallSuccessAlert('Article created successfully', 800);
-			await router.push({ pathname: '/community', query: { articleCategory } });
-		} catch (err: any) {
-			console.log('Error, createBoardArticle:', err.message);
-			sweetMixinErrorAlert(err.message).then();
+			await sweetTopSmallSuccessAlert('Article is created successfully', 700);
+			await router.push({
+				pathname: '/mypage',
+				query: {
+					category: 'myArticles',
+				},
+			});
+		} catch(err: any) {
+			console.log(err);
+			sweetErrorHandling(new Error(Message.INSERT_ALL_INPUTS)).then();
 		}
-	};
+	}
+
+	// const handleRegisterButton = async () => {
+	// 	try {
+	// 		const articleContent = editorRef.current?.getInstance().getMarkdown() ?? '';
+	// 		if (!memoizedValues.articleTitle.trim() || !articleContent.trim()) {
+	// 			throw new Error('Please enter an article title and content.');
+	// 		}
+
+	// 		await createBoardArticle({
+	// 			variables: {
+	// 				input: {
+	// 					articleCategory,
+	// 					articleTitle: memoizedValues.articleTitle.trim(),
+	// 					articleContent,
+	// 					articleImage: memoizedValues.articleImage || null,
+	// 				},
+	// 			},
+	// 		});
+
+	// 		await sweetTopSmallSuccessAlert('Article created successfully', 800);
+	// 		await router.push({ pathname: '/community', query: { articleCategory } });
+	// 	} catch (err: any) {
+	// 		console.log('Error, createBoardArticle:', err.message);
+	// 		sweetMixinErrorAlert(err.message).then();
+	// 	}
+	// };
 
 	const doDisabledCheck = () => {
 		if (memoizedValues.articleContent === '' || memoizedValues.articleTitle === '') {
