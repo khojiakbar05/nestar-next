@@ -10,7 +10,8 @@ export interface BoardArticleInput {
 }
 
 interface BAISearch {
-	articleCategory: BoardArticleCategory;
+	articleCategory?: BoardArticleCategory;
+	memberId?: string;
 	text?: string;
 }
 
