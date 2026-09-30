@@ -7,6 +7,9 @@ import { onError } from '@apollo/client/link/error';
 import { getJwtToken } from '../libs/auth';
 import { TokenRefreshLink } from 'apollo-link-token-refresh';
 import { sweetErrorAlert } from '../libs/sweetAlert';
+import { send } from 'process';
+import { shaderMaterial } from '@react-three/drei';
+import { isArrayBufferView } from 'util/types';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 
 function getHeaders() {
@@ -27,6 +30,54 @@ const tokenRefreshLink = new TokenRefreshLink({
 		return null;
 	},
 });
+
+// Custom websocket client
+function isSharedArrayBuffer(value: unknown): value is SharedArrayBuffer {
+	return typeof SharedArrayBuffer !== 'undefined' && value instanceof SharedArrayBuffer;
+}
+
+class LoggingWebSocket{
+	private socket: WebSocket;
+
+	constructor(url: string) {
+		this.socket = new WebSocket(url);
+
+		this.socket.onopen = () => {
+			console.log("WebSocket connection!");
+		};
+
+		this.socket.onmessage = (msg) => {
+			console.log("WeSocket message! ", msg.data);
+		};
+
+		this.socket.onerror = (error) => {
+			console.log("WeSocket, error: ", error);
+		};
+
+	}
+
+	send(data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView) {
+		if (isSharedArrayBuffer(data)) {
+			const bytes = new Uint8Array(data.byteLength);
+			bytes.set(new Uint8Array(data));
+			this.socket.send(bytes.buffer);
+			return;
+		}
+
+		if (ArrayBuffer.isView(data)) {
+			const bytes = new Uint8Array(data.byteLength);
+			bytes.set(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+			this.socket.send(bytes.buffer);
+			return;
+		}
+
+		this.socket.send(data);
+	}
+
+	close() {
+		this.socket.close();
+	}
+}
 
 function createIsomorphicLink() {
 	if (typeof window !== 'undefined') {
@@ -56,6 +107,7 @@ function createIsomorphicLink() {
 					return { headers: getHeaders() };
 				},
 			},
+			webSocketImpl: LoggingWebSocket
 		});
 
 		const errorLink = onError(({ graphQLErrors, networkError, response }) => {
