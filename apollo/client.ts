@@ -7,9 +7,7 @@ import { onError } from '@apollo/client/link/error';
 import { getJwtToken } from '../libs/auth';
 import { TokenRefreshLink } from 'apollo-link-token-refresh';
 import { sweetErrorAlert } from '../libs/sweetAlert';
-import { send } from 'process';
-import { shaderMaterial } from '@react-three/drei';
-import { isArrayBufferView } from 'util/types';
+import { socketVar } from './store';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 
 function getHeaders() {
@@ -40,7 +38,11 @@ class LoggingWebSocket{
 	private socket: WebSocket;
 
 	constructor(url: string) {
-		this.socket = new WebSocket(url);
+		const socketUrl = new URL(url);
+		const token = getJwtToken();
+		if (token) socketUrl.searchParams.set('token', token);
+		this.socket = new WebSocket(socketUrl.toString());
+		socketVar(this.socket);
 
 		this.socket.onopen = () => {
 			console.log("WebSocket connection!");

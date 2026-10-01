@@ -66,16 +66,17 @@ const requestJwtToken = async ({
 
 export const signUp = async (nick: string, password: string, phone: string, type: string): Promise<void> => {
 	try {
-		const { jwtToken } = await requestSignUpJwtToken({ nick, password, phone, type });
-
-		if (jwtToken) {
-			updateStorage({ jwtToken });
-			updateUserInfo(jwtToken);
+		let { jwtToken } = await requestSignUpJwtToken({ nick, password, phone, type });
+		if (!jwtToken) {
+			({ jwtToken } = await requestJwtToken({ nick, password }));
 		}
+		if (!jwtToken) throw new Error('Registration succeeded, but no login token was returned.');
+
+		updateStorage({ jwtToken });
+		updateUserInfo(jwtToken);
 	} catch (err) {
-		console.warn('login err', err);
-		logOut();
-		// throw new Error('Login Err');
+		console.warn('signup err', err);
+		throw err;
 	}
 };
 

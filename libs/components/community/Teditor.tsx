@@ -88,13 +88,13 @@ const TuiEditor = () => {
 			const articleContent = editor?.getInstance().getHTML() as string;
 			memoizedValues.articleContent = articleContent;
 
-			if (memoizedValues.articleContent === '' && memoizedValues.articleContent === '' ) {
+			if (memoizedValues.articleContent === '' && memoizedValues.articleContent === '') {
 				throw new Error(Message.INSERT_ALL_INPUTS);
 			}
 
 			await createBoardArticle({
 				variables: {
-					input: {...memoizedValues, articleCategory},
+					input: { ...memoizedValues, articleCategory },
 				},
 			});
 
@@ -105,37 +105,11 @@ const TuiEditor = () => {
 					category: 'myArticles',
 				},
 			});
-		} catch(err: any) {
+		} catch (err: any) {
 			console.log(err);
 			sweetErrorHandling(new Error(Message.INSERT_ALL_INPUTS)).then();
 		}
-	}
-
-	// const handleRegisterButton = async () => {
-	// 	try {
-	// 		const articleContent = editorRef.current?.getInstance().getMarkdown() ?? '';
-	// 		if (!memoizedValues.articleTitle.trim() || !articleContent.trim()) {
-	// 			throw new Error('Please enter an article title and content.');
-	// 		}
-
-	// 		await createBoardArticle({
-	// 			variables: {
-	// 				input: {
-	// 					articleCategory,
-	// 					articleTitle: memoizedValues.articleTitle.trim(),
-	// 					articleContent,
-	// 					articleImage: memoizedValues.articleImage || null,
-	// 				},
-	// 			},
-	// 		});
-
-	// 		await sweetTopSmallSuccessAlert('Article created successfully', 800);
-	// 		await router.push({ pathname: '/community', query: { articleCategory } });
-	// 	} catch (err: any) {
-	// 		console.log('Error, createBoardArticle:', err.message);
-	// 		sweetMixinErrorAlert(err.message).then();
-	// 	}
-	// };
+	};
 
 	const doDisabledCheck = () => {
 		if (memoizedValues.articleContent === '' || memoizedValues.articleTitle === '') {
